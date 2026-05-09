@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:wp": "vite build --config vite.wp.config.js",
+    "make:plugin": "npm run build:wp && zip -r audio-visualizer-wp.zip audio-visualizer-wp/",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,0 +1,35 @@
+name: Build WordPress Plugin ZIP
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin assets
+        run: npm run build:wp
+
+      - name: Create ZIP
+        run: zip -r audio-visualizer-wp.zip audio-visualizer-wp/
+
+      - name: Upload plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-visualizer-wp
+          path: audio-visualizer-wp.zip
+          retention-days: 90
