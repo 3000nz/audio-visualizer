@@ -1,3 +1,4 @@
+import './style.css';
 import * as THREE from 'three';
 import { AudioManager } from './audio.js';
 import { BeatDetector } from './beat.js';
