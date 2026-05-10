@@ -22,6 +22,7 @@ $page_title = get_the_title() ?: get_bloginfo('name');
 <body>
 
   <canvas id="canvas"></canvas>
+  <canvas id="canvas-2d"></canvas>
 
   <!-- ── Start overlay ──────────────────────────────────────────── -->
   <div id="overlay">

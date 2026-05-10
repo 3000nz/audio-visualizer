@@ -27,6 +27,16 @@ canvas#canvas {
   height: 100vh;
 }
 
+/* 2D canvas overlay for Cosmos mode — hidden by default */
+canvas#canvas-2d {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* above Three.js canvas, below UI panel (z-index 50) */
+}
+
 /* ---------- start overlay ---------- */
 #overlay {
   position: fixed;
