@@ -5,7 +5,7 @@ import { TunnelMode } from './tunnel.js';
 import { FluidMode } from './fluid.js';
 import { CosmosMode } from './cosmos.js';
 
-const MODES = [BarsMode, ParticlesMode, KaleidoscopeMode, TunnelMode, FluidMode, CosmosMode];
+const MODES = [CosmosMode, BarsMode, ParticlesMode, KaleidoscopeMode, TunnelMode, FluidMode];
 
 export class ModeManager {
   constructor() {

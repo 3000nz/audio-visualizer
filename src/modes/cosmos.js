@@ -1,44 +1,48 @@
-const TOTAL_STARS = 1500;
-const AVG_BREAK_POINT = 140;
-const AVG_COLOR_SHIFT = 110;
-const WAVEFORM_POINTS = 512;
-const FREQ_POINTS = 64;
-const PI_TWO = Math.PI * 2;
-const PI_HALF = Math.PI / 180;
+const TOTAL_STARS   = 1500;
+const AVG_BREAK_PT  = 140;
+const AVG_COLOR_SH  = 110;
+const WAVE_PTS      = 512;
+const FREQ_PTS      = 64;
+const OUTER_PTS     = 32;
+const TWO_PI        = Math.PI * 2;
+const DEG           = Math.PI / 180; // PI_HALF in original
 
 const PALETTES = [
-  { // 0 — Neon (original colours)
-    bg: ['#000011', '#060D1F', '#02243F'],
+  { // 0 — Neon
+    bg:         ['#000011', '#060D1F', '#02243F'],
     starA: '#465677', starB: '#B5BFD4', starBeat: '#F451BA',
-    wave: [157, 242, 157], waveShadow: '#9DF29D',
-    freq: 'rgba(77,218,248,1)', freqShadow: '#4DDAF8',
+    ring1:  [77,  218, 248], ring1Shadow:  '#4DDAF8',  // inner  — cyan
+    ring2: [157,  242, 157], ring2Shadow:  '#9DF29D',  // middle — green
+    ring3: [100,   80, 255], ring3Shadow:  '#6450FF',  // outer  — violet
+    glowH: 185,
   },
   { // 1 — Fire
-    bg: ['#110000', '#1F0600', '#3F1200'],
+    bg:         ['#110000', '#1F0600', '#3F1200'],
     starA: '#774646', starB: '#D4B5A0', starBeat: '#FFD050',
-    wave: [255, 140, 40], waveShadow: '#FF8C28',
-    freq: 'rgba(255,220,60,1)', freqShadow: '#FFDC3C',
+    ring1:  [255, 220,  60], ring1Shadow:  '#FFDC3C',
+    ring2:  [255, 140,  40], ring2Shadow:  '#FF8C28',
+    ring3:  [200,  50,  30], ring3Shadow:  '#C8321E',
+    glowH: 30,
   },
   { // 2 — Deep Space
-    bg: ['#08000F', '#12001F', '#1E003F'],
+    bg:         ['#08000F', '#12001F', '#1E003F'],
     starA: '#4A3A77', starB: '#B0A8D4', starBeat: '#50E0FF',
-    wave: [157, 140, 242], waveShadow: '#9D8CF2',
-    freq: 'rgba(180,70,255,1)', freqShadow: '#B446FF',
+    ring1:  [180,  70, 255], ring1Shadow:  '#B446FF',
+    ring2:  [157, 140, 242], ring2Shadow:  '#9D8CF2',
+    ring3:  [ 50, 100, 220], ring3Shadow:  '#3264DC',
+    glowH: 280,
   },
   { // 3 — Mono
-    bg: ['#000000', '#080808', '#101010'],
+    bg:         ['#000000', '#080808', '#101010'],
     starA: '#333333', starB: '#777777', starBeat: '#CCCCCC',
-    wave: [200, 200, 200], waveShadow: '#C8C8C8',
-    freq: 'rgba(255,255,255,0.9)', freqShadow: '#FFFFFF',
+    ring1:  [255, 255, 255], ring1Shadow:  '#FFFFFF',
+    ring2:  [200, 200, 200], ring2Shadow:  '#C8C8C8',
+    ring3:  [100, 100, 100], ring3Shadow:  '#646464',
+    glowH: 0,
   },
 ];
 
-// ── Star ──────────────────────────────────────────────────────────────────────
-// Faithful to the original algorithm:
-//   - direction vector points away from center, derived from spawn position
-//   - acceleration (ddx/ddy) makes stars speed up as they age
-//   - z drives radius growth only (not perspective projection)
-//   - additive blending creates the glow without per-star shadow cost
+// ── Star (faithful to original algorithm) ────────────────────────────────────
 
 class Star {
   constructor(w, h, cx, cy, fill) { this.init(w, h, cx, cy, fill); }
@@ -47,46 +51,38 @@ class Star {
     this.max_depth = Math.max(w / h, h / w);
 
     if (fill) {
-      // Initial field fill — random across screen, matching original
       this.x = Math.random() * w - cx;
       this.y = Math.random() * h - cy;
     } else {
-      // Respawn near centre so new stars appear to explode outward
-      const angle = Math.random() * PI_TWO;
-      const spread = Math.min(w, h) * 0.03;
-      const r = Math.random() * spread + 1; // minimum 1px so direction calc works
-      this.x = Math.cos(angle) * r;
-      this.y = Math.sin(angle) * r;
+      const a = Math.random() * TWO_PI;
+      const r = Math.random() * Math.min(w, h) * 0.03 + 1;
+      this.x = Math.cos(a) * r;
+      this.y = Math.sin(a) * r;
     }
 
-    this.z = this.max_depth;
+    this.z      = this.max_depth;
     this.radius = 0.2;
 
-    // Original direction algorithm: normalise velocity so the dominant
-    // axis is ±1 and the other is proportional — star moves straight
-    // away from the centre along its spawn angle.
     const ax = this.x >= 0 ? 1 : -1;
     const ay = this.y >= 0 ? 1 : -1;
-    const absx = Math.abs(this.x);
-    const absy = Math.abs(this.y);
+    const ax_ = Math.abs(this.x);
+    const ay_ = Math.abs(this.y);
 
-    if (absx >= absy && absx > 0) {
+    if (ax_ >= ay_ && ax_ > 0) {
       this.dx = ax;
-      this.dy = (absy / absx) * ay;
-    } else if (absy > 0) {
-      this.dx = (absx / absy) * ax;
+      this.dy = (ay_ / ax_) * ay;
+    } else if (ay_ > 0) {
+      this.dx = (ax_ / ay_) * ax;
       this.dy = ay;
     } else {
-      // Exactly at origin — random angle fallback
-      const a = Math.random() * PI_TWO;
+      const a = Math.random() * TWO_PI;
       this.dx = Math.cos(a);
       this.dy = Math.sin(a);
     }
 
-    // Original acceleration: 0.1% of velocity added per frame
     this.ddx = 0.001 * this.dx;
     this.ddy = 0.001 * this.dy;
-    this.dz  = -0.1; // drives radius growth
+    this.dz  = -0.1;
     this.secondary = Math.random() < 0.3;
   }
 
@@ -94,7 +90,7 @@ class Star {
     this.x  += this.dx * d;
     this.y  += this.dy * d;
     this.z  += this.dz;
-    this.dx += this.ddx; // accelerate
+    this.dx += this.ddx;
     this.dy += this.ddy;
     this.radius = 0.2 + 0.1 * (this.max_depth - this.z);
   }
@@ -104,17 +100,27 @@ class Star {
   }
 }
 
-// ── Ring helper ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function drawRing(ctx, points) {
-  const N = points.length;
+function drawRing(ctx, pts) {
+  const N = pts.length;
   ctx.beginPath();
-  ctx.moveTo((points[0].x + points[N - 1].x) / 2, (points[0].y + points[N - 1].y) / 2);
+  ctx.moveTo((pts[0].x + pts[N - 1].x) / 2, (pts[0].y + pts[N - 1].y) / 2);
   for (let i = 0; i < N; i++) {
-    const c = points[i], nx = points[(i + 1) % N];
-    ctx.quadraticCurveTo(c.x, c.y, (c.x + nx.x) / 2, (c.y + nx.y) / 2);
+    const c = pts[i], n = pts[(i + 1) % N];
+    ctx.quadraticCurveTo(c.x, c.y, (c.x + n.x) / 2, (c.y + n.y) / 2);
   }
   ctx.closePath();
+}
+
+function ringPoints(cx, cy, baseR, disp, n, transform) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const angle = 360 * i / n;
+    const r     = baseR + disp[i];
+    pts.push({ x: cx + r * Math.sin(DEG * angle), y: cy + r * Math.cos(DEG * angle) });
+  }
+  return pts;
 }
 
 // ── CosmosMode ────────────────────────────────────────────────────────────────
@@ -127,7 +133,8 @@ export class CosmosMode {
     this.w = this.h = this.cx = this.cy = 0;
     this.rotation  = 0;
     this.rotDir    = 1;
-    this.surge     = 0; // beat-driven speed boost, decays each frame
+    this.surge     = 0;
+    this.autoHue   = 0; // 0–1, cycles when autoColor is on
     this.name      = 'Cosmos';
     this._onResize = null;
   }
@@ -137,11 +144,8 @@ export class CosmosMode {
     this.canvas2d.style.display = 'block';
     this._resize();
     this.ctx = this.canvas2d.getContext('2d');
-
-    // Fill field immediately with random stars across the screen (original behaviour)
     const { w, h, cx, cy } = this;
     this.stars = Array.from({ length: TOTAL_STARS }, () => new Star(w, h, cx, cy, true));
-
     this._onResize = () => this._resize();
     window.addEventListener('resize', this._onResize);
   }
@@ -154,26 +158,59 @@ export class CosmosMode {
     this.cy = this.h / 2;
   }
 
+  // Resolve the 3-ring color set — either from palette or auto-cycling hue
+  _ringColors(settings) {
+    if (settings.autoColor) {
+      const h1 = (this.autoHue * 360)        % 360;
+      const h2 = (this.autoHue * 360 + 120)  % 360;
+      const h3 = (this.autoHue * 360 + 240)  % 360;
+      return {
+        ring1: null, ring1H: h1, ring1Shadow: `hsl(${h1},100%,70%)`,
+        ring2: null, ring2H: h2, ring2Shadow: `hsl(${h2},100%,65%)`,
+        ring3: null, ring3H: h3, ring3Shadow: `hsl(${h3},100%,60%)`,
+        glowH: h1,
+      };
+    }
+    const p = PALETTES[settings.palette] ?? PALETTES[0];
+    return {
+      ring1: p.ring1, ring1H: null, ring1Shadow: p.ring1Shadow,
+      ring2: p.ring2, ring2H: null, ring2Shadow: p.ring2Shadow,
+      ring3: p.ring3, ring3H: null, ring3Shadow: p.ring3Shadow,
+      glowH: p.glowH,
+    };
+  }
+
+  _strokeColor(rgb, h, alpha) {
+    if (h !== null) return `hsla(${h},100%,60%,${alpha.toFixed(3)})`;
+    const [r, g, b] = rgb;
+    return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+  }
+
   update(_scene, audioData, beatData, _clock, settings) {
     const { waveform, frequencies } = audioData;
-    const ctx  = this.ctx;
+    const ctx = this.ctx;
     const { w, h, cx, cy } = this;
-    const pal  = PALETTES[settings.palette] ?? PALETTES[0];
+    const pal   = PALETTES[settings.palette] ?? PALETTES[0];
     const bloom = settings.bloomStrength;
     const sens  = settings.sensitivity;
 
-    // ── Audio average (0–255 space, sensitivity-scaled) ───────────────
+    // Auto-color hue drift
+    if (settings.autoColor) {
+      this.autoHue = (this.autoHue + 0.0003 * settings.speed) % 1;
+    }
+    const rc = this._ringColors(settings);
+
+    // Average (0–255, sensitivity-scaled)
     let sum = 0;
     for (let i = 0; i < frequencies.length; i++) sum += frequencies[i];
     const avg = Math.min(255, (sum / frequencies.length) * sens);
 
-    // Original speed formula + beat surge
+    // Speed + beat surge
     if (beatData.beat) this.surge += beatData.intensity * 4 * settings.speed;
     this.surge *= 0.91;
-    const d = ((avg > AVG_BREAK_POINT ? avg / 20 : avg / 50) * settings.speed) + this.surge;
+    const d = ((avg > AVG_BREAK_PT ? avg / 20 : avg / 50) * settings.speed) + this.surge;
 
-    // Ring rotation reverses on high energy (original behaviour)
-    this.rotDir   = avg > AVG_BREAK_POINT ? -1 : 1;
+    this.rotDir   = avg > AVG_BREAK_PT ? -1 : 1;
     this.rotation += this.rotDir * 0.001 * settings.speed;
 
     // ── Background ────────────────────────────────────────────────────
@@ -184,90 +221,104 @@ export class CosmosMode {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    // ── Stars ─────────────────────────────────────────────────────────
-    // Colour logic mirrors original: avg drives colour tier
-    const starColor = avg > AVG_BREAK_POINT ? pal.starBeat
-                    : avg > AVG_COLOR_SHIFT  ? pal.starB
-                    : null; // null = per-star primary/secondary
+    // ── Edge vignette glow (bloom-driven) ─────────────────────────────
+    const glowAlpha = (avg / 255) * bloom * 0.22;
+    if (glowAlpha > 0.005) {
+      const glowR  = Math.sqrt(cx * cx + cy * cy);
+      const clearR = Math.min(cx, cy) * 0.55;
+      const vign   = ctx.createRadialGradient(cx, cy, clearR, cx, cy, glowR);
+      vign.addColorStop(0, 'rgba(0,0,0,0)');
+      vign.addColorStop(1, `hsla(${rc.glowH},100%,60%,${glowAlpha.toFixed(3)})`);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = vign;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
 
+    // ── Stars ─────────────────────────────────────────────────────────
+    const starColor = avg > AVG_BREAK_PT ? pal.starBeat
+                    : avg > AVG_COLOR_SH  ? pal.starB
+                    : null;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-
     for (const star of this.stars) {
       star.update(d);
-      if (star.isOffScreen(cx, cy)) {
-        star.init(w, h, cx, cy, false); // respawn at centre
-        continue;
-      }
-      const color = starColor ?? (star.secondary ? pal.starB : pal.starA);
+      if (star.isOffScreen(cx, cy)) { star.init(w, h, cx, cy, false); continue; }
       ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.arc(cx + star.x, cy + star.y, star.radius, 0, PI_TWO, false);
+      ctx.fillStyle = starColor ?? (star.secondary ? pal.starB : pal.starA);
+      ctx.arc(cx + star.x, cy + star.y, star.radius, 0, TWO_PI, false);
       ctx.fill();
     }
-
     ctx.restore();
 
-    // ── Waveform ring (time-domain, 512 pts) ─────────────────────────
-    const baseR = Math.min(w, h) / 10; // matches original: Math.abs(w,h)/10
+    // Shared ring setup
+    const baseR  = Math.min(w, h) / 10;
+    const innerR = baseR * 0.75;
+    const midR   = baseR * 1.25;
+    const outerR = baseR * 1.85;
+
+    // ── Ring 1 — inner, freq-domain, brightest ────────────────────────
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(this.rotation);
-    ctx.translate(-cx, -cy);
+    ctx.translate(cx, cy); ctx.rotate(this.rotation); ctx.translate(-cx, -cy);
 
-    const wavePoints = [];
-    for (let i = 0; i < WAVEFORM_POINTS; i++) {
-      const srcIdx = Math.floor(i * waveform.length / WAVEFORM_POINTS);
-      const amp    = ((waveform[srcIdx] - 128) / 128) * sens;
-      const angle  = (360 * i / WAVEFORM_POINTS);
-      const disp   = amp * baseR * 0.8 * settings.intensity;
-      wavePoints.push({
-        x: cx + baseR * Math.sin(PI_HALF * angle) + disp * Math.sin(PI_HALF * angle),
-        y: cy + baseR * Math.cos(PI_HALF * angle) + disp * Math.cos(PI_HALF * angle),
-      });
-    }
+    const freqDisp = Array.from({ length: FREQ_PTS }, (_, i) => {
+      const idx = Math.floor(i * (frequencies.length * 0.5) / FREQ_PTS);
+      return Math.min(1, (frequencies[idx] / 255) * sens) * innerR * 0.7 * settings.intensity;
+    });
+    const ring1Pts = ringPoints(cx, cy, innerR, freqDisp, FREQ_PTS);
+    const freqAlpha = Math.min(1.0, 0.5 + (avg / 255) * 0.5);
 
-    const [wr, wg, wb] = pal.wave;
-    const waveAlpha = Math.min(0.9, 0.11 + (avg / 255) * 0.69);
-    const waveColor = `rgba(${wr},${wg},${wb},${waveAlpha})`;
-
-    drawRing(ctx, wavePoints);
-    ctx.fillStyle   = 'rgba(29,36,57,0.05)';
+    drawRing(ctx, ring1Pts);
+    ctx.fillStyle   = 'rgba(29,36,57,0.1)';
     ctx.fill();
-    ctx.shadowBlur  = bloom * 16;
-    ctx.shadowColor = pal.waveShadow;
-    ctx.strokeStyle = waveColor;
-    ctx.lineWidth   = 1 + bloom * 0.3;
+    ctx.shadowBlur  = bloom * 18;
+    ctx.shadowColor = rc.ring1Shadow;
+    ctx.strokeStyle = this._strokeColor(rc.ring1, rc.ring1H, freqAlpha);
+    ctx.lineWidth   = 2.0 + bloom * 0.4;
     ctx.lineCap     = 'round';
     ctx.stroke();
     ctx.restore();
 
-    // ── Average frequency ring (freq-domain, 64 pts) ──────────────────
+    // ── Ring 2 — middle, waveform-domain, medium opacity ──────────────
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(-this.rotation * 0.7);
-    ctx.translate(-cx, -cy);
+    ctx.translate(cx, cy); ctx.rotate(-this.rotation * 0.8); ctx.translate(-cx, -cy);
 
-    const freqD = avg > AVG_BREAK_POINT ? avg + 10 * Math.random() : avg;
-    const freqPoints = [];
-    for (let i = 0; i < FREQ_POINTS; i++) {
-      const srcIdx = Math.floor(i * (frequencies.length * 0.5) / FREQ_POINTS);
-      const amp    = Math.min(1, (frequencies[srcIdx] / 255) * sens);
-      const angle  = (360 * i / FREQ_POINTS);
-      const disp   = amp * freqD * 0.5 * settings.intensity;
-      freqPoints.push({
-        x: cx + baseR * Math.sin(PI_HALF * angle) + disp * Math.sin(PI_HALF * angle),
-        y: cy + baseR * Math.cos(PI_HALF * angle) + disp * Math.cos(PI_HALF * angle),
-      });
-    }
+    const waveDisp = Array.from({ length: WAVE_PTS }, (_, i) => {
+      const idx = Math.floor(i * waveform.length / WAVE_PTS);
+      return ((waveform[idx] - 128) / 128) * sens * midR * 0.3 * settings.intensity;
+    });
+    const ring2Pts = ringPoints(cx, cy, midR, waveDisp, WAVE_PTS);
+    const waveAlpha = Math.min(0.7, 0.15 + (avg / 255) * 0.55);
 
-    drawRing(ctx, freqPoints);
-    ctx.fillStyle   = 'rgba(29,36,57,0.1)';
+    drawRing(ctx, ring2Pts);
+    ctx.fillStyle   = 'rgba(29,36,57,0.05)';
     ctx.fill();
     ctx.shadowBlur  = bloom * 14;
-    ctx.shadowColor = pal.freqShadow;
-    ctx.strokeStyle = pal.freq;
+    ctx.shadowColor = rc.ring2Shadow;
+    ctx.strokeStyle = this._strokeColor(rc.ring2, rc.ring2H, waveAlpha);
     ctx.lineWidth   = 1.5 + bloom * 0.3;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Ring 3 — outer, energy pulse, most transparent ────────────────
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(this.rotation * 0.4); ctx.translate(-cx, -cy);
+
+    const energyDisp = (avg / 255) * sens * outerR * 0.12 * settings.intensity;
+    // Uniform displacement = perfect circle that breathes with energy
+    const outerDispArr = new Array(OUTER_PTS).fill(energyDisp);
+    const ring3Pts = ringPoints(cx, cy, outerR, outerDispArr, OUTER_PTS);
+    const outerAlpha = Math.min(0.28, 0.04 + (avg / 255) * 0.24);
+
+    drawRing(ctx, ring3Pts);
+    ctx.fillStyle   = 'rgba(0,0,0,0)';
+    ctx.fill();
+    ctx.shadowBlur  = bloom * 22;
+    ctx.shadowColor = rc.ring3Shadow;
+    ctx.strokeStyle = this._strokeColor(rc.ring3, rc.ring3H, outerAlpha);
+    ctx.lineWidth   = 1.0 + bloom * 0.4;
     ctx.lineCap     = 'round';
     ctx.stroke();
     ctx.restore();
@@ -279,8 +330,8 @@ export class CosmosMode {
       this.canvas2d.style.display = 'none';
       if (this.ctx) this.ctx.clearRect(0, 0, this.w, this.h);
     }
-    this.stars    = [];
-    this.ctx      = null;
+    this.stars = [];
+    this.ctx = null;
     this.canvas2d = null;
   }
 }

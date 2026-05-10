@@ -6,6 +6,7 @@ export class UI {
       speed: 1.0,
       intensity: 1.0,
       palette: 0,
+      autoColor: false,
     };
     this.visible = true;
     this._onSourceChange = null;
@@ -49,6 +50,19 @@ export class UI {
         this.settings.palette = parseInt(btn.dataset.palette, 10);
       });
     });
+
+    // Auto Color toggle
+    const autoColorBtn = document.getElementById('auto-color-btn');
+    if (autoColorBtn) {
+      autoColorBtn.addEventListener('click', () => {
+        this.settings.autoColor = !this.settings.autoColor;
+        autoColorBtn.classList.toggle('active', this.settings.autoColor);
+        document.querySelectorAll('.palette-btn').forEach(b => {
+          b.style.opacity = this.settings.autoColor ? '0.4' : '';
+          b.style.pointerEvents = this.settings.autoColor ? 'none' : '';
+        });
+      });
+    }
 
     // Sliders
     this._bindSlider('sl-sensitivity', 'val-sensitivity', 'sensitivity', v => v.toFixed(1) + '×');

@@ -246,6 +246,29 @@ canvas#canvas-2d {
 .swatch.space { background: linear-gradient(90deg, #0a0066, #5200cc, #00b3ff); }
 .swatch.mono  { background: linear-gradient(90deg, #222, #999, #fff); }
 
+/* Auto Color button */
+.auto-color-btn {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+.auto-color-btn.active {
+  background: linear-gradient(90deg, rgba(255,0,204,0.18), rgba(0,229,255,0.18), rgba(176,96,255,0.18));
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 0 0 8px rgba(176, 96, 255, 0.4);
+}
+.auto-color-btn:hover:not(.active) { background: rgba(255,255,255,0.06); }
+
 /* Sliders */
 .sliders { display: flex; flex-direction: column; gap: 0.6rem; }
 .slider-row {

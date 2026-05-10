@@ -59,7 +59,7 @@ $page_title = get_the_title() ?: get_bloginfo('name');
       <label class="section-label">MODE</label>
       <div class="mode-row">
         <button id="prev-mode" class="icon-btn">&#8249;</button>
-        <span id="mode-name">Radial Bars</span>
+        <span id="mode-name">Cosmos</span>
         <button id="next-mode" class="icon-btn">&#8250;</button>
       </div>
     </div>
@@ -88,6 +88,7 @@ $page_title = get_the_title() ?: get_bloginfo('name');
           <span class="swatch mono"></span>Mono
         </button>
       </div>
+      <button id="auto-color-btn" class="auto-color-btn" title="Cycle colors automatically">Auto Color</button>
     </div>
 
     <div class="panel-section sliders">
