@@ -2,15 +2,15 @@
 /**
  * Plugin Name:  Audio Visualizer
  * Plugin URI:   https://github.com/3000nz/audio-visualizer
- * Description:  Full-screen WebGL audio visualizer — microphone or system audio, 5 trippy modes, neon bloom.
- * Version:      1.0.0
+ * Description:  Full-screen WebGL audio visualizer — microphone or system audio, 6 trippy modes, neon bloom.
+ * Version:      1.3.0
  * Requires PHP: 7.4
  * License:      MIT
  */
 
 if (!defined('ABSPATH')) exit;
 
-define('AUDIO_VIZ_VERSION', '1.0.0');
+define('AUDIO_VIZ_VERSION', '1.3.0');
 define('AUDIO_VIZ_URL',     plugin_dir_url(__FILE__));
 define('AUDIO_VIZ_PATH',    plugin_dir_path(__FILE__));
 
