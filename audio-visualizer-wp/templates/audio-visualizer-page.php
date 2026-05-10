@@ -104,10 +104,15 @@ $page_title = get_the_title() ?: get_bloginfo('name');
         <button class="boost-btn" data-boost="4">4×</button>
         <button class="boost-btn" data-boost="5">5×</button>
       </div>
-      <div class="slider-row">
+      <div class="slider-row cosmos-only">
         <label>Ring Size</label>
         <input type="range" id="sl-ringsize" min="-100" max="100" step="1" value="0" />
         <span class="sl-val" id="val-ringsize">+0</span>
+      </div>
+      <div class="slider-row cosmos-only">
+        <label>Brightness</label>
+        <input type="range" id="sl-ringbrightness" min="0.2" max="3" step="0.05" value="1" />
+        <span class="sl-val" id="val-ringbrightness">1.0×</span>
       </div>
       <div class="slider-row">
         <label>Bloom</label>

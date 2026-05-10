@@ -8,6 +8,7 @@ export class UI {
       palette: 0,
       autoColor: false,
       ringSize: 0,
+      ringBrightness: 1.0,
     };
     this.visible = true;
     this._onSourceChange = null;
@@ -90,7 +91,8 @@ export class UI {
     this._bindSlider('sl-bloom',     'val-bloom',     'bloomStrength', v => v.toFixed(1));
     this._bindSlider('sl-speed',     'val-speed',     'speed',        v => v.toFixed(1) + '×');
     this._bindSlider('sl-intensity', 'val-intensity', 'intensity',    v => v.toFixed(1) + '×');
-    this._bindSlider('sl-ringsize',  'val-ringsize',  'ringSize',     v => (v >= 0 ? '+' : '') + Math.round(v));
+    this._bindSlider('sl-ringsize',      'val-ringsize',      'ringSize',      v => (v >= 0 ? '+' : '') + Math.round(v));
+    this._bindSlider('sl-ringbrightness','val-ringbrightness','ringBrightness',v => v.toFixed(1) + '×');
 
     // Toggle panel button
     document.getElementById('toggle-panel').addEventListener('click', () => this.toggle());
@@ -115,6 +117,10 @@ export class UI {
 
   setModeName(name) {
     if (this._modeLabel) this._modeLabel.textContent = name;
+    const isCosmos = name === 'Cosmos';
+    document.querySelectorAll('.cosmos-only').forEach(el => {
+      el.style.display = isCosmos ? '' : 'none';
+    });
   }
 
   toggle() {

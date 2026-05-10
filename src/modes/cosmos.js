@@ -212,14 +212,16 @@ export class CosmosMode {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    // ── Edge vignette glow ────────────────────────────────────────────
-    const glowAlpha = (avg / 255) * bloom * 0.22;
+    // ── Edge vignette glow — sharp ramp, intensity doubles at rim ─────
+    const glowAlpha = (avg / 255) * bloom * 0.30;
     if (glowAlpha > 0.005) {
       const glowR  = Math.sqrt(cx * cx + cy * cy);
-      const clearR = Math.min(cx, cy) * 0.55;
+      const clearR = Math.min(cx, cy) * 0.68;
       const vign   = ctx.createRadialGradient(cx, cy, clearR, cx, cy, glowR);
-      vign.addColorStop(0, 'rgba(0,0,0,0)');
-      vign.addColorStop(1, `hsla(${rc.glowH},100%,60%,${glowAlpha.toFixed(3)})`);
+      vign.addColorStop(0,    'rgba(0,0,0,0)');
+      vign.addColorStop(0.55, 'rgba(0,0,0,0)');
+      vign.addColorStop(0.82, `hsla(${rc.glowH},100%,60%,${(glowAlpha * 0.45).toFixed(3)})`);
+      vign.addColorStop(1,    `hsla(${rc.glowH},100%,72%,${Math.min(0.95, glowAlpha * 2.2).toFixed(3)})`);
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = vign;
@@ -257,16 +259,17 @@ export class CosmosMode {
     ctx.save();
     ctx.translate(cx, cy); ctx.rotate(this.rotation); ctx.translate(-cx, -cy);
 
+    const rb = settings.ringBrightness ?? 1;
     const freqDisp = Array.from({ length: FREQ_PTS }, (_, i) => {
       const idx = Math.floor(i * (frequencies.length * 0.5) / FREQ_PTS);
       return Math.min(1, (frequencies[idx] / 255) * sens) * freqR * 0.75 * settings.intensity;
     });
-    const freqAlpha = Math.min(1.0, 0.55 + (avg / 255) * 0.45);
+    const freqAlpha = Math.min(1.0, (0.55 + (avg / 255) * 0.45) * rb);
 
     drawRing(ctx, ringPoints(cx, cy, freqR, freqDisp, FREQ_PTS));
     ctx.fillStyle   = 'rgba(29,36,57,0.1)';
     ctx.fill();
-    ctx.shadowBlur  = bloom * 18;
+    ctx.shadowBlur  = bloom * 18 * Math.min(2, rb);
     ctx.shadowColor = rc.shadowA;
     ctx.strokeStyle = this._strokeColor(rc.colorA, rc.colorAH, freqAlpha);
     ctx.lineWidth   = 2.5 + bloom * 0.4;
@@ -284,12 +287,12 @@ export class CosmosMode {
       const binVal = Math.min(1, (frequencies[idx] / 255) * sens);
       return (bassLevel * 0.65 + binVal * 0.35) * bassR * 0.85 * settings.intensity;
     });
-    const bassAlpha = Math.min(1.0, 0.5 + bassLevel * 0.5);
+    const bassAlpha = Math.min(1.0, (0.5 + bassLevel * 0.5) * rb);
 
     drawRing(ctx, ringPoints(cx, cy, bassR, bassDisp, BASS_PTS));
     ctx.fillStyle   = 'rgba(0,0,0,0)';
     ctx.fill();
-    ctx.shadowBlur  = bloom * 22 * (0.5 + bassLevel * 0.5);
+    ctx.shadowBlur  = bloom * 22 * (0.5 + bassLevel * 0.5) * Math.min(2, rb);
     ctx.shadowColor = rc.shadowB;
     ctx.strokeStyle = this._strokeColor(rc.colorB, rc.colorBH, bassAlpha);
     ctx.lineWidth   = 2.5 + bloom * 0.5 + bassLevel * 2.0;
@@ -305,12 +308,12 @@ export class CosmosMode {
       const idx = Math.floor(i * waveform.length / WAVE_PTS);
       return ((waveform[idx] - 128) / 128) * sens * midR * 0.28 * settings.intensity;
     });
-    const waveAlpha = Math.min(0.75, 0.2 + (avg / 255) * 0.55);
+    const waveAlpha = Math.min(1.0, (0.2 + (avg / 255) * 0.55) * rb);
 
     drawRing(ctx, ringPoints(cx, cy, midR, waveDisp, WAVE_PTS));
     ctx.fillStyle   = 'rgba(29,36,57,0.04)';
     ctx.fill();
-    ctx.shadowBlur  = bloom * 14;
+    ctx.shadowBlur  = bloom * 14 * Math.min(2, rb);
     ctx.shadowColor = rc.shadowA;
     ctx.strokeStyle = this._strokeColor(rc.colorA, rc.colorAH, waveAlpha);
     ctx.lineWidth   = 1.8 + bloom * 0.3;
