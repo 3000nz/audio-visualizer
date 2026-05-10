@@ -41,6 +41,19 @@ export class AudioManager {
   }
 
   async _getMicStream() {
+    // getUserMedia is only available in secure contexts (HTTPS / localhost)
+    if (!window.isSecureContext) {
+      throw new Error(
+        'Microphone access requires HTTPS. ' +
+        'Make sure your site is served over https:// and try again.'
+      );
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error(
+        'Your browser does not support microphone access. ' +
+        'Try the latest version of Chrome, Firefox, or Safari.'
+      );
+    }
     try {
       return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     } catch (err) {
@@ -72,7 +85,14 @@ export class AudioManager {
     switch (err.name) {
       case 'NotFoundError':
       case 'DevicesNotFoundError':
-        return 'No microphone found. Plug in a microphone and try again.';
+        // NotFoundError fires both when no device exists AND when the OS
+        // privacy settings block the browser from seeing the device.
+        return (
+          'Microphone not found or blocked by your OS. ' +
+          'Check: macOS → System Settings → Privacy → Microphone, ' +
+          'or Windows → Settings → Privacy → Microphone — ' +
+          'make sure your browser is allowed.'
+        );
       case 'NotAllowedError':
       case 'PermissionDeniedError':
         return 'Microphone access was denied. Click the lock icon in the address bar and allow microphone access, then reload.';
