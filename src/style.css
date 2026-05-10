@@ -323,3 +323,38 @@ input[type="range"]::-moz-range-thumb {
   border-color: var(--accent2);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
 }
+
+/* ---------- inline overlay error ---------- */
+#overlay-error {
+  margin-top: 1.2rem;
+  color: #ff6b6b;
+  font-size: 0.82rem;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+/* ---------- error toast (post-start errors) ---------- */
+#error-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(30, 8, 8, 0.92);
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  border-radius: var(--radius);
+  color: #ff8080;
+  font-size: 0.82rem;
+  padding: 0.65rem 1.1rem;
+  max-width: min(420px, 90vw);
+  text-align: center;
+  line-height: 1.5;
+  z-index: 200;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+#error-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

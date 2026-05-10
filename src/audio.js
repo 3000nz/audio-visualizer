@@ -22,23 +22,80 @@ export class AudioManager {
     this.analyser.maxDecibels = -10;
 
     if (sourceType === 'mic') {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.stream = await this._getMicStream();
     } else {
-      // Request display media with minimal video; stop video tracks after getting audio
-      this.stream = await navigator.mediaDevices.getDisplayMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 44100 },
-        video: { width: 1, height: 1 },
-      });
-      // Stop video tracks immediately — we only want audio
-      this.stream.getVideoTracks().forEach(t => t.stop());
+      this.stream = await this._getSystemStream();
     }
 
     const audioTracks = this.stream.getAudioTracks();
-    if (audioTracks.length === 0) throw new Error('No audio track in stream.');
+    if (audioTracks.length === 0) {
+      throw new Error(
+        'No audio track was captured. ' +
+        'For system audio, tick "Share audio" (or "Share tab audio") in the browser dialog.'
+      );
+    }
 
     this.source = this.context.createMediaStreamSource(this.stream);
     this.source.connect(this.analyser);
     this.active = true;
+  }
+
+  async _getMicStream() {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch (err) {
+      throw new Error(this._micError(err));
+    }
+  }
+
+  async _getSystemStream() {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new Error(
+        'System audio capture is not supported in this browser. ' +
+        'Try Chrome or Edge on desktop.'
+      );
+    }
+    let stream;
+    try {
+      // Use plain { audio: true } — avoid advanced constraints (sampleRate etc.)
+      // that cause "Requested device not found" on many systems.
+      stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+    } catch (err) {
+      throw new Error(this._systemError(err));
+    }
+    // Drop the video track — we only needed it to satisfy the getDisplayMedia API.
+    stream.getVideoTracks().forEach(t => t.stop());
+    return stream;
+  }
+
+  _micError(err) {
+    switch (err.name) {
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return 'No microphone found. Plug in a microphone and try again.';
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        return 'Microphone access was denied. Click the lock icon in the address bar and allow microphone access, then reload.';
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return 'Your microphone is in use by another application. Close it and try again.';
+      default:
+        return `Microphone error: ${err.message}`;
+    }
+  }
+
+  _systemError(err) {
+    switch (err.name) {
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        return 'Screen share was cancelled or denied. Click "System Audio" again and allow sharing.';
+      case 'NotFoundError':
+        return 'No shareable audio source was found. Make sure your OS has an audio output device.';
+      case 'AbortError':
+        return 'Screen share was closed before audio could be captured. Try again.';
+      default:
+        return `System audio error: ${err.message}`;
+    }
   }
 
   getAudioData(sensitivity = 1.5) {
@@ -58,8 +115,8 @@ export class AudioManager {
     for (let i = midEnd + 1; i <= highEnd; i++) highSum += this.frequencies[i];
 
     const s = sensitivity;
-    const bass = Math.min(1, bassSum / bassEnd / 255 * s);
-    const mid = Math.min(1, midSum / (midEnd - bassEnd) / 255 * s);
+    const bass   = Math.min(1, bassSum / bassEnd / 255 * s);
+    const mid    = Math.min(1, midSum / (midEnd - bassEnd) / 255 * s);
     const treble = Math.min(1, highSum / (highEnd - midEnd) / 255 * s);
     const energy = bass * 0.5 + mid * 0.3 + treble * 0.2;
 
@@ -67,11 +124,7 @@ export class AudioManager {
   }
 
   _silent() {
-    return {
-      frequencies: this.frequencies,
-      waveform: this.waveform,
-      bass: 0, mid: 0, treble: 0, energy: 0,
-    };
+    return { frequencies: this.frequencies, waveform: this.waveform, bass: 0, mid: 0, treble: 0, energy: 0 };
   }
 
   dispose() {

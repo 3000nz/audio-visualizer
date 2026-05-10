@@ -27,7 +27,12 @@ ui.init({
       await audio.init(sourceType);
     } catch (err) {
       console.error('Audio init failed:', err);
-      alert(`Could not access audio: ${err.message}`);
+      // Surface error on the overlay if it's visible, otherwise use a non-blocking toast
+      if (!overlay.classList.contains('gone')) {
+        showOverlayError(err.message);
+      } else {
+        showToast(err.message);
+      }
     }
   },
   onModeChange: (dir) => {
@@ -42,8 +47,33 @@ ui.setModeName(modes.getName());
 // ---- Start overlay ----
 const overlay = document.getElementById('overlay');
 
+function showToast(msg) {
+  let el = document.getElementById('error-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'error-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('visible'), 5000);
+}
+
+function showOverlayError(msg) {
+  let el = document.getElementById('overlay-error');
+  if (!el) {
+    el = document.createElement('p');
+    el.id = 'overlay-error';
+    document.querySelector('.overlay-inner').appendChild(el);
+  }
+  el.textContent = msg;
+}
+
 async function startWith(sourceType) {
   try {
+    const errEl = document.getElementById('overlay-error');
+    if (errEl) errEl.textContent = '';
     await audio.init(sourceType);
     overlay.classList.add('gone');
     // Sync UI source buttons
@@ -56,7 +86,7 @@ async function startWith(sourceType) {
     }
   } catch (err) {
     console.error('Failed to start:', err);
-    alert(`Could not access audio: ${err.message}`);
+    showOverlayError(err.message);
   }
 }
 
