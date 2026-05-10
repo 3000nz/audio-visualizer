@@ -70,6 +70,23 @@ export class UI {
     this._bindSlider('sl-speed',       'val-speed',       'speed',        v => v.toFixed(1) + '×');
     this._bindSlider('sl-intensity',   'val-intensity',   'intensity',    v => v.toFixed(1) + '×');
 
+    // Sensitivity boost quick-set buttons
+    const sensSlider = document.getElementById('sl-sensitivity');
+    const sensVal    = document.getElementById('val-sensitivity');
+    document.querySelectorAll('.boost-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = parseFloat(btn.dataset.sens);
+        this.settings.sensitivity = v;
+        sensSlider.value = v;
+        sensVal.textContent = v.toFixed(1) + '×';
+        document.querySelectorAll('.boost-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+    // Clear active boost when slider is moved manually
+    sensSlider.addEventListener('input', () => {
+      document.querySelectorAll('.boost-btn').forEach(b => b.classList.remove('active'));
+    });
+
     // Toggle panel button
     document.getElementById('toggle-panel').addEventListener('click', () => this.toggle());
 

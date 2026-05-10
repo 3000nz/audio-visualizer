@@ -9,8 +9,6 @@ const OUTER_PTS     = 32;
 const TWO_PI        = Math.PI * 2;
 const DEG           = Math.PI / 180;
 
-// Two complementary colors (colorA / colorB) per palette.
-// Rings alternate A-B-A-B-A so adjacent rings always contrast.
 const PALETTES = [
   { // 0 — Neon
     bg:        ['#000011', '#060D1F', '#02243F'],
@@ -42,7 +40,7 @@ const PALETTES = [
   },
 ];
 
-// ── Star (faithful to original algorithm) ────────────────────────────────────
+// ── Star ──────────────────────────────────────────────────────────────────────
 
 class Star {
   constructor(w, h, cx, cy, fill) { this.init(w, h, cx, cy, fill); }
@@ -158,7 +156,6 @@ export class CosmosMode {
     this.cy = this.h / 2;
   }
 
-  // Two complementary colors — auto mode uses H and H+180
   _ringColors(settings) {
     if (settings.autoColor) {
       const hA = (this.autoHue * 360) % 360;
@@ -230,7 +227,8 @@ export class CosmosMode {
       ctx.restore();
     }
 
-    // ── Stars ─────────────────────────────────────────────────────────
+    // ── Stars — dim & tiny at center, bright & large at edges ─────────
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
     const starColor = avg > AVG_BREAK_PT ? pal.starBeat
                     : avg > AVG_COLOR_SH  ? pal.starB
                     : null;
@@ -239,20 +237,28 @@ export class CosmosMode {
     for (const star of this.stars) {
       star.update(d);
       if (star.isOffScreen(cx, cy)) { star.init(w, h, cx, cy, false); continue; }
+
+      const dist       = Math.sqrt(star.x * star.x + star.y * star.y);
+      const edgeFactor = Math.min(1, dist / maxDist);
+      // Near-center stars are nearly invisible; edge stars are full brightness & large
+      ctx.globalAlpha  = 0.06 + edgeFactor * 0.94;
+      const drawRadius = Math.max(0.3, star.radius * (0.3 + edgeFactor * 2.8));
+
       ctx.beginPath();
       ctx.fillStyle = starColor ?? (star.secondary ? pal.starB : pal.starA);
-      ctx.arc(cx + star.x, cy + star.y, star.radius, 0, TWO_PI, false);
+      ctx.arc(cx + star.x, cy + star.y, drawRadius, 0, TWO_PI, false);
       ctx.fill();
     }
     ctx.restore();
 
     // Ring radii (inside → outside)
     const baseR    = Math.min(w, h) / 10;
-    const freqR    = baseR * 0.55;   // ring 1 — freq shape
-    const bassR    = baseR * 0.90;   // ring 2 — bass pulse
-    const midR     = baseR * 1.30;   // ring 3 — waveform
-    const trebleR  = baseR * 1.70;   // ring 4 — treble sparkle
-    const outerR   = baseR * 2.10;   // ring 5 — energy, always visible
+    const freqR    = baseR * 0.55;
+    const bassR    = baseR * 0.90;
+    const midR     = baseR * 1.30;
+    const trebleR  = baseR * 1.70;
+    const outerR   = baseR * 2.10;
+    const haloR    = baseR * 2.65;  // new outermost glow ring
 
     // ── Ring 1 — freq shape, colorA ───────────────────────────────────
     ctx.save();
@@ -281,7 +287,6 @@ export class CosmosMode {
 
     const bassLevel = Math.min(1, (bass ?? 0) * sens);
     const bassDisp = Array.from({ length: BASS_PTS }, (_, i) => {
-      // Mix uniform bass energy with per-bin texture from low-freq bins
       const idx = Math.floor(i * 6 / BASS_PTS) + 1;
       const binVal = Math.min(1, (frequencies[idx] / 255) * sens);
       return (bassLevel * 0.65 + binVal * 0.35) * bassR * 0.85 * settings.intensity;
@@ -324,7 +329,6 @@ export class CosmosMode {
     ctx.save();
     ctx.translate(cx, cy); ctx.rotate(this.rotation * 1.4); ctx.translate(-cx, -cy);
 
-    // Maps to treble freq bins (~90–370) — spiky, high-resolution
     const trebleLevel = Math.min(1, (treble ?? 0) * sens);
     const trebleDisp = Array.from({ length: TREBLE_PTS }, (_, i) => {
       const idx = Math.min(frequencies.length - 1, Math.floor(90 + i * 280 / TREBLE_PTS));
@@ -343,16 +347,15 @@ export class CosmosMode {
     ctx.stroke();
     ctx.restore();
 
-    // ── Ring 5 — outer energy, always fully visible, colorA ───────────
+    // ── Ring 5 — outer energy, colorA, always fully visible ───────────
     ctx.save();
     ctx.translate(cx, cy); ctx.rotate(this.rotation * 0.25); ctx.translate(-cx, -cy);
 
     const energyDisp = (avg / 255) * sens * outerR * 0.1 * settings.intensity;
-    const outerDispArr = new Array(OUTER_PTS).fill(energyDisp);
-    // Always highly visible: minimum 0.8 alpha
+    const ring5Pts = ringPoints(cx, cy, outerR, new Array(OUTER_PTS).fill(energyDisp), OUTER_PTS);
     const outerAlpha = Math.min(1.0, 0.82 + (avg / 255) * 0.18);
 
-    drawRing(ctx, ringPoints(cx, cy, outerR, outerDispArr, OUTER_PTS));
+    drawRing(ctx, ring5Pts);
     ctx.fillStyle   = 'rgba(0,0,0,0)';
     ctx.fill();
     ctx.shadowBlur  = bloom * 32;
@@ -361,10 +364,44 @@ export class CosmosMode {
     ctx.lineWidth   = 4.0 + bloom * 0.9;
     ctx.lineCap     = 'round';
     ctx.stroke();
-    // Second stroke pass for extra glow intensity
-    ctx.shadowBlur  = bloom * 16;
-    ctx.lineWidth   = 2.0 + bloom * 0.4;
+    // Second pass — thinner bright core
+    ctx.shadowBlur  = bloom * 14;
+    ctx.lineWidth   = 1.8 + bloom * 0.3;
     ctx.stroke();
+    ctx.restore();
+
+    // ── Ring 6 — halo, colorB, deep layered glow ──────────────────────
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(-this.rotation * 0.12); ctx.translate(-cx, -cy);
+
+    const haloDisp = (avg / 255) * sens * haloR * 0.08 * settings.intensity;
+    const ring6Pts = ringPoints(cx, cy, haloR, new Array(OUTER_PTS).fill(haloDisp), OUTER_PTS);
+    const haloAlpha = Math.min(1.0, 0.85 + (avg / 255) * 0.15);
+
+    drawRing(ctx, ring6Pts);
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fill();
+
+    // Pass 1 — wide diffuse outer glow
+    ctx.shadowBlur  = bloom * 50 + 20;
+    ctx.shadowColor = rc.shadowB;
+    ctx.strokeStyle = this._strokeColor(rc.colorB, rc.colorBH, 0.25);
+    ctx.lineWidth   = 10.0 + bloom * 2.0;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+
+    // Pass 2 — mid glow
+    ctx.shadowBlur  = bloom * 28 + 8;
+    ctx.strokeStyle = this._strokeColor(rc.colorB, rc.colorBH, 0.6);
+    ctx.lineWidth   = 5.5 + bloom * 0.9;
+    ctx.stroke();
+
+    // Pass 3 — sharp bright core
+    ctx.shadowBlur  = bloom * 12;
+    ctx.strokeStyle = this._strokeColor(rc.colorB, rc.colorBH, haloAlpha);
+    ctx.lineWidth   = 2.5 + bloom * 0.4;
+    ctx.stroke();
+
     ctx.restore();
   }
 

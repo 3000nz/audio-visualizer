@@ -269,6 +269,33 @@ canvas#canvas-2d {
 }
 .auto-color-btn:hover:not(.active) { background: rgba(255,255,255,0.06); }
 
+/* Sensitivity boost quick-set buttons */
+.boost-row {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.2rem;
+}
+.boost-btn {
+  flex: 1;
+  padding: 0.28rem 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.boost-btn.active {
+  background: rgba(176, 96, 255, 0.2);
+  border-color: var(--accent);
+  color: var(--text);
+}
+.boost-btn:hover:not(.active) { background: rgba(255,255,255,0.06); }
+
 /* Sliders */
 .sliders { display: flex; flex-direction: column; gap: 0.6rem; }
 .slider-row {
