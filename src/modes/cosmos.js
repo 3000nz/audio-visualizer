@@ -227,8 +227,7 @@ export class CosmosMode {
       ctx.restore();
     }
 
-    // ── Stars — dim & tiny at center, bright & large at edges ─────────
-    const maxDist = Math.sqrt(cx * cx + cy * cy);
+    // ── Stars ─────────────────────────────────────────────────────────
     const starColor = avg > AVG_BREAK_PT ? pal.starBeat
                     : avg > AVG_COLOR_SH  ? pal.starB
                     : null;
@@ -237,16 +236,9 @@ export class CosmosMode {
     for (const star of this.stars) {
       star.update(d);
       if (star.isOffScreen(cx, cy)) { star.init(w, h, cx, cy, false); continue; }
-
-      const dist       = Math.sqrt(star.x * star.x + star.y * star.y);
-      const edgeFactor = Math.min(1, dist / maxDist);
-      // Near-center stars are nearly invisible; edge stars are full brightness & large
-      ctx.globalAlpha  = 0.06 + edgeFactor * 0.94;
-      const drawRadius = Math.max(0.3, star.radius * (0.3 + edgeFactor * 2.8));
-
       ctx.beginPath();
       ctx.fillStyle = starColor ?? (star.secondary ? pal.starB : pal.starA);
-      ctx.arc(cx + star.x, cy + star.y, drawRadius, 0, TWO_PI, false);
+      ctx.arc(cx + star.x, cy + star.y, star.radius, 0, TWO_PI, false);
       ctx.fill();
     }
     ctx.restore();
