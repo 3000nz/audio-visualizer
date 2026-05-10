@@ -89,9 +89,8 @@ export class AudioManager {
         // privacy settings block the browser from seeing the device.
         return (
           'Microphone not found or blocked by your OS. ' +
-          'Check: macOS → System Settings → Privacy → Microphone, ' +
-          'or Windows → Settings → Privacy → Microphone — ' +
-          'make sure your browser is allowed.'
+          'On macOS: System Settings → Privacy & Security → Microphone → enable your browser. ' +
+          'On Windows: Settings → Privacy → Microphone → enable your browser.'
         );
       case 'NotAllowedError':
       case 'PermissionDeniedError':
