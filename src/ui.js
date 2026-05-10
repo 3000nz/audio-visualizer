@@ -7,6 +7,7 @@ export class UI {
       intensity: 1.0,
       palette: 0,
       autoColor: false,
+      ringSize: 0,
     };
     this.visible = true;
     this._onSourceChange = null;
@@ -64,28 +65,32 @@ export class UI {
       });
     }
 
-    // Sliders
-    this._bindSlider('sl-sensitivity', 'val-sensitivity', 'sensitivity', v => v.toFixed(1) + '×');
-    this._bindSlider('sl-bloom',       'val-bloom',       'bloomStrength', v => v.toFixed(1));
-    this._bindSlider('sl-speed',       'val-speed',       'speed',        v => v.toFixed(1) + '×');
-    this._bindSlider('sl-intensity',   'val-intensity',   'intensity',    v => v.toFixed(1) + '×');
-
-    // Sensitivity boost quick-set buttons
+    // Sensitivity — display value 1–N; actual = display / 100 * 3
+    // Boost buttons multiply the slider max (2× → max 200, etc.)
     const sensSlider = document.getElementById('sl-sensitivity');
     const sensVal    = document.getElementById('val-sensitivity');
+    const updateSens = () => {
+      const v = parseFloat(sensSlider.value);
+      this.settings.sensitivity = v / 100 * 3;
+      sensVal.textContent = Math.round(v) + '';
+    };
+    sensSlider.addEventListener('input', updateSens);
+
     document.querySelectorAll('.boost-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const v = parseFloat(btn.dataset.sens);
-        this.settings.sensitivity = v;
-        sensSlider.value = v;
-        sensVal.textContent = v.toFixed(1) + '×';
+        const boost = parseInt(btn.dataset.boost, 10);
+        sensSlider.max = boost * 100;
+        // Clamp value if it now exceeds new max (shouldn't happen going up, but going down)
+        if (parseFloat(sensSlider.value) > boost * 100) sensSlider.value = boost * 100;
+        updateSens();
         document.querySelectorAll('.boost-btn').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
-    // Clear active boost when slider is moved manually
-    sensSlider.addEventListener('input', () => {
-      document.querySelectorAll('.boost-btn').forEach(b => b.classList.remove('active'));
-    });
+
+    this._bindSlider('sl-bloom',     'val-bloom',     'bloomStrength', v => v.toFixed(1));
+    this._bindSlider('sl-speed',     'val-speed',     'speed',        v => v.toFixed(1) + '×');
+    this._bindSlider('sl-intensity', 'val-intensity', 'intensity',    v => v.toFixed(1) + '×');
+    this._bindSlider('sl-ringsize',  'val-ringsize',  'ringSize',     v => (v >= 0 ? '+' : '') + Math.round(v));
 
     // Toggle panel button
     document.getElementById('toggle-panel').addEventListener('click', () => this.toggle());

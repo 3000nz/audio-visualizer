@@ -251,14 +251,15 @@ export class CosmosMode {
     }
     ctx.restore();
 
-    // Ring radii (inside → outside)
+    // Ring radii (inside → outside), scaled by Ring Size setting
+    const sizeScale = Math.max(0.15, 1 + (settings.ringSize ?? 0) / 100);
     const baseR    = Math.min(w, h) / 10;
-    const freqR    = baseR * 0.55;
-    const bassR    = baseR * 0.90;
-    const midR     = baseR * 1.30;
-    const trebleR  = baseR * 1.70;
-    const outerR   = baseR * 2.10;
-    const haloR    = baseR * 2.65;  // new outermost glow ring
+    const freqR    = baseR * 0.55  * sizeScale;
+    const bassR    = baseR * 0.90  * sizeScale;
+    const midR     = baseR * 1.30  * sizeScale;
+    const trebleR  = baseR * 1.70  * sizeScale;
+    const outerR   = baseR * 2.10  * sizeScale;
+    const haloR    = baseR * 2.65  * sizeScale;
 
     // ── Ring 1 — freq shape, colorA ───────────────────────────────────
     ctx.save();
