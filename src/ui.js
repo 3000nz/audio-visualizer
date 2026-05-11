@@ -1,7 +1,7 @@
 export class UI {
   constructor() {
     this.settings = {
-      sensitivity: 3.0,
+      sensitivity: 10.8,
       bloomStrength: 3.0,
       speed: 2.5,
       intensity: 3.0,

@@ -377,26 +377,29 @@ input[type="range"]::-moz-range-thumb {
 
 .toggle-panel-label { display: none; }
 
-/* Mobile — prominent pill button in thumb zone */
+/* Mobile — prominent pill button bottom-center */
 @media (max-width: 640px) {
   #toggle-panel {
     top: auto;
     bottom: 1.5rem;
-    right: 1.5rem;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
     width: auto;
     height: auto;
-    padding: 0.65rem 1.2rem;
-    border-radius: 2rem;
-    background: rgba(176, 96, 255, 0.85);
+    padding: 0.6rem 1.6rem;
+    border-radius: 999px;
+    background: rgba(176, 96, 255, 0.88);
     border-color: var(--accent);
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.08em;
     box-shadow: 0 4px 22px rgba(176, 96, 255, 0.55);
     backdrop-filter: blur(12px);
+    white-space: nowrap;
   }
-  #toggle-panel svg { width: 16px; height: 16px; }
+  #toggle-panel svg { display: none; }
   #toggle-panel:hover {
     background: rgba(176, 96, 255, 1);
     border-color: var(--accent);
