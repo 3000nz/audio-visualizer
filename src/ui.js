@@ -1,13 +1,13 @@
 export class UI {
   constructor() {
     this.settings = {
-      sensitivity: 1.5,
+      sensitivity: 3.0,
       bloomStrength: 1.5,
       speed: 1.0,
-      intensity: 1.0,
+      intensity: 3.0,
       palette: 0,
       autoColor: false,
-      ringSize: 0,
+      ringSize: 46,
       ringBrightness: 1.0,
     };
     this.visible = true;
