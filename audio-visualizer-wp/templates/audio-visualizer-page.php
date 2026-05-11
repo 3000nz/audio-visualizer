@@ -142,6 +142,7 @@ $page_title = get_the_title() ?: get_bloginfo('name');
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
     </svg>
+    <span class="toggle-panel-label">Hide</span>
   </button>
 
   <script type="module" src="<?php echo esc_url($asset_url . 'visualizer.js'); ?>"></script>

@@ -364,14 +364,46 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.3rem;
   z-index: 60;
-  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
-#toggle-panel svg { width: 18px; height: 18px; }
+#toggle-panel svg { width: 18px; height: 18px; flex-shrink: 0; }
 #toggle-panel:hover {
   color: var(--accent2);
   border-color: var(--accent2);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.toggle-panel-label { display: none; }
+
+/* Mobile — prominent pill button in thumb zone */
+@media (max-width: 640px) {
+  #toggle-panel {
+    top: auto;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: auto;
+    height: auto;
+    padding: 0.65rem 1.2rem;
+    border-radius: 2rem;
+    background: rgba(176, 96, 255, 0.85);
+    border-color: var(--accent);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    box-shadow: 0 4px 22px rgba(176, 96, 255, 0.55);
+    backdrop-filter: blur(12px);
+  }
+  #toggle-panel svg { width: 16px; height: 16px; }
+  #toggle-panel:hover {
+    background: rgba(176, 96, 255, 1);
+    border-color: var(--accent);
+    box-shadow: 0 4px 28px rgba(176, 96, 255, 0.75);
+    color: #fff;
+  }
+  .toggle-panel-label { display: inline; }
 }
 
 /* ---------- inline overlay error ---------- */

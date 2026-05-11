@@ -126,5 +126,7 @@ export class UI {
   toggle() {
     this.visible = !this.visible;
     this._panel.classList.toggle('hidden', !this.visible);
+    const label = document.querySelector('.toggle-panel-label');
+    if (label) label.textContent = this.visible ? 'Hide' : 'Show';
   }
 }
