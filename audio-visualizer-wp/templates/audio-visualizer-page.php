@@ -94,8 +94,8 @@ $page_title = get_the_title() ?: get_bloginfo('name');
     <div class="panel-section sliders">
       <div class="slider-row">
         <label>Sensitivity</label>
-        <input type="range" id="sl-sensitivity" min="1" max="400" step="1" value="360" />
-        <span class="sl-val" id="val-sensitivity">360</span>
+        <input type="range" id="sl-sensitivity" min="1" max="400" step="1" value="400" />
+        <span class="sl-val" id="val-sensitivity">400</span>
       </div>
       <div class="boost-row">
         <button class="boost-btn" data-boost="1">1×</button>

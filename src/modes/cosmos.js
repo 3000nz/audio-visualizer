@@ -195,7 +195,9 @@ export class CosmosMode {
 
     let sum = 0;
     for (let i = 0; i < frequencies.length; i++) sum += frequencies[i];
-    const avg = Math.min(255, (sum / frequencies.length) * sens);
+    const rawAvg = sum / frequencies.length;
+    // Noise gate: ignore ambient mic hiss below threshold before sensitivity scaling
+    const avg = rawAvg < 3 ? 0 : Math.min(255, rawAvg * sens);
 
     if (beatData.beat) this.surge += beatData.intensity * 4 * settings.speed;
     this.surge *= 0.91;
