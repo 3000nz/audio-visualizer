@@ -85,11 +85,11 @@ class Star {
   }
 
   update(d) {
-    this.x  += this.dx * d;
-    this.y  += this.dy * d;
-    this.z  += this.dz;
-    this.dx += this.ddx;
-    this.dy += this.ddy;
+    this.x  += this.dx  * d;
+    this.y  += this.dy  * d;
+    this.z  += this.dz  * d;
+    this.dx += this.ddx * d;
+    this.dy += this.ddy * d;
     this.radius = 0.2 + 0.1 * (this.max_depth - this.z);
   }
 
